@@ -40,16 +40,35 @@ fun LoginScreen(
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
 
+    // Validación
+    fun validateAndLogin() {
+        emailError = null
+        passwordError = null
+
+        if (email.isBlank()) emailError = "Ingresa tu correo"
+        else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches())
+            emailError = "Correo no válido"
+
+        if (password.isBlank()) passwordError = "Ingresa tu contraseña"
+        else if (password.length < 6) passwordError = "Mínimo 6 caracteres"
+
+        if (emailError == null && passwordError == null) {
+            viewModel.login(email, password)
+        }
+    }
+
+    // Listener
     LaunchedEffect(authState) {
         when (authState) {
             is Resource.Success -> {
-                val ok = (authState as Resource.Success<Boolean>).data
-                if (ok) onLoginSuccess()
+                if ((authState as Resource.Success<Boolean>).data)
+                    onLoginSuccess()
             }
             is Resource.Failure -> {
                 Toast.makeText(
                     context,
-                    (authState as Resource.Failure).exception.message ?: "Error al iniciar sesión",
+                    (authState as Resource.Failure).exception.message
+                        ?: "Error al iniciar sesión",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -57,149 +76,156 @@ fun LoginScreen(
         }
     }
 
-    fun validateAndLogin() {
-        emailError = null
-        passwordError = null
-
-        if (email.isBlank()) {
-            emailError = "Ingresa tu correo"
-        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailError = "Correo no válido"
-        }
-
-        if (password.isBlank()) {
-            passwordError = "Ingresa tu contraseña"
-        } else if (password.length < 6) {
-            passwordError = "Mínimo 6 caracteres"
-        }
-
-        if (emailError == null && passwordError == null) {
-            viewModel.login(email, password)
-        }
-    }
-
+    // UI
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center
+            .background(Color(0xFFF5F5F5))
     ) {
-        Card(
+
+        // Fondo superior con imagen
+        Image(
+            painter = painterResource(id = R.drawable.img), // pon tu imagen aquí
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                .fillMaxWidth()
+                .height(260.dp)
+        )
+
+        // Curva blanca elegante superpuesta
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(240.dp)
+                .align(Alignment.BottomCenter)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 40.dp,
+                        topEnd = 40.dp
+                    )
+                )
+                .background(Color.White)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+
+            Spacer(modifier = Modifier.height(70.dp))
+
+            // Logo circular pro
+            Box(
                 modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
             ) {
-                // Avatar circular con tu logo
                 Image(
-                    painter = painterResource(id = R.drawable.tecsup),
-                    contentDescription = "Logo",
-                    modifier = Modifier
-                        .size(82.dp)
-                        .clip(CircleShape),
+                    painter = painterResource(id = R.drawable.img_1),
+                    contentDescription = null,
+                    modifier = Modifier.size(85.dp),
                     contentScale = ContentScale.Crop
                 )
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Inicia sesión en EventPlanner",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Gestiona tus eventos de forma sencilla",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Text(
+                "EventPlanner",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF222222)
+            )
 
-                Spacer(modifier = Modifier.height(28.dp))
+            Text(
+                "Gestiona tus eventos fácilmente",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
 
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        emailError = null
-                    },
-                    label = { Text("Correo electrónico") },
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    isError = emailError != null,
-                    supportingText = {
-                        emailError?.let { msg ->
-                            Text(
-                                text = msg,
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 12.sp
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Spacer(modifier = Modifier.height(35.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        passwordError = null
-                    },
-                    label = { Text("Contraseña") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    isError = passwordError != null,
-                    supportingText = {
-                        passwordError?.let { msg ->
-                            Text(
-                                text = msg,
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 12.sp
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                if (authState is Resource.Loading) {
-                    CircularProgressIndicator()
-                } else {
-                    Button(
-                        onClick = { validateAndLogin() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text(
-                            text = "INGRESAR",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+            // Email
+            OutlinedTextField(
+                value = email,
+                onValueChange = {
+                    email = it
+                    emailError = null
+                },
+                label = { Text("Correo electrónico") },
+                leadingIcon = {
+                    Icon(Icons.Default.Email, contentDescription = null)
+                },
+                isError = emailError != null,
+                supportingText = {
+                    emailError?.let { msg ->
+                        Text(text = msg, color = Color.Red, fontSize = 12.sp)
                     }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-                    TextButton(onClick = onNavigateToRegister) {
-                        Text(
-                            text = "¿No tienes cuenta? Crear cuenta",
-                            color = MaterialTheme.colorScheme.primary
-                        )
+            // Password
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    password = it
+                    passwordError = null
+                },
+                label = { Text("Contraseña") },
+                leadingIcon = {
+                    Icon(Icons.Default.Lock, contentDescription = null)
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                isError = passwordError != null,
+                supportingText = {
+                    passwordError?.let { msg ->
+                        Text(text = msg, color = Color.Red, fontSize = 12.sp)
                     }
-                }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Botón profesional con gradiente
+            Button(
+                onClick = { validateAndLogin() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(24.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF6A00)
+                )
+            ) {
+                Text(
+                    "INGRESAR",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(onClick = onNavigateToRegister) {
+                Text(
+                    "¿No tienes cuenta? Crear cuenta",
+                    color = Color(0xFFFF6A00),
+                    fontSize = 15.sp
+                )
             }
         }
     }
