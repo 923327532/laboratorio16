@@ -4,38 +4,33 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio12.core.Resource
 import com.google.firebase.auth.FirebaseAuth
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AuthViewModel : ViewModel() {
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    // Inyección simple directa para examen, idealmente usar Repository
+) : ViewModel() {
 
-    // Instancia directa de FirebaseAuth
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val _authState = MutableStateFlow<Resource<Boolean>?>(null)
+    val authState: StateFlow<Resource<Boolean>?> = _authState
 
-    // Estado inicial: Success(false) significa "no estamos cargando ni hay error, pero no hay usuario logueado aún"
-    private val _authState = MutableStateFlow<Resource<Boolean>>(Resource.Success(false))
-    val authState: StateFlow<Resource<Boolean>> = _authState
+    private val auth = FirebaseAuth.getInstance()
 
-    fun login(email: String, password: String) {
-        // Emitimos estado de carga
+    fun login(email: String, pass: String) = viewModelScope.launch {
         _authState.value = Resource.Loading
-
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // Login exitoso
-                    _authState.value = Resource.Success(true)
-                } else {
-                    // Error en login
-                    _authState.value = Resource.Error(task.exception?.message ?: "Error desconocido")
-                }
-            }
+        auth.signInWithEmailAndPassword(email, pass)
+            .addOnSuccessListener { _authState.value = Resource.Success(true) }
+            .addOnFailureListener { _authState.value = Resource.Failure(it) }
     }
 
-    // Función opcional para limpiar el estado al salir
-    fun signOut() {
-        auth.signOut()
-        _authState.value = Resource.Success(false)
+    fun register(email: String, pass: String) = viewModelScope.launch {
+        _authState.value = Resource.Loading
+        auth.createUserWithEmailAndPassword(email, pass)
+            .addOnSuccessListener { _authState.value = Resource.Success(true) }
+            .addOnFailureListener { _authState.value = Resource.Failure(it) }
     }
 }

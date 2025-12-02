@@ -8,47 +8,28 @@ import com.example.laboratorio12.ui.auth.LoginScreen
 import com.example.laboratorio12.ui.auth.RegisterScreen
 import com.example.laboratorio12.ui.home.HomeScreen
 
-enum class AppScreens(val route: String) {
-    LOGIN("login"),
-    REGISTER("register"),
-    HOME("home")
-}
-
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = AppScreens.LOGIN.route
-    ) {
-        composable(AppScreens.LOGIN.route) {
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(AppScreens.HOME.route) {
-                        popUpTo(AppScreens.LOGIN.route) { inclusive = true }
-                    }
-                },
-                onNavigateToRegister = {
-                    navController.navigate(AppScreens.REGISTER.route)
-                }
+                onLoginSuccess = { navController.navigate("home") },
+                onNavigateToRegister = { navController.navigate("register") }
             )
         }
-        composable(AppScreens.REGISTER.route) {
+        composable("register") {
             RegisterScreen(
-                onRegisterSuccess = {
-                    navController.navigate(AppScreens.HOME.route) {
-                        popUpTo(AppScreens.REGISTER.route) { inclusive = true }
-                    }
-                },
-                onNavigateBack = { navController.popBackStack() }
+                onRegisterSuccess = { navController.navigate("home") },
+                onNavigateToLogin = { navController.popBackStack() }
             )
         }
-        composable(AppScreens.HOME.route) {
+        composable("home") {
             HomeScreen(
                 onLogout = {
-                    navController.navigate(AppScreens.LOGIN.route) {
-                        popUpTo(AppScreens.HOME.route) { inclusive = true }
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
                     }
                 }
             )

@@ -1,124 +1,121 @@
 package com.example.laboratorio12.ui.auth
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.laboratorio12.R
-import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.laboratorio12.core.Resource
 
 @Composable
 fun LoginScreen(
+    viewModel: AuthViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    val auth = FirebaseAuth.getInstance()
-    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+    val authState by viewModel.authState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is Resource.Success -> onLoginSuccess()
+            is Resource.Failure -> Toast.makeText(context, "Error: ${(authState as Resource.Failure).exception.message}", Toast.LENGTH_SHORT).show()
+            else -> {}
+        }
+    }
 
     Box(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF4F4F4))
+            .background(MaterialTheme.colorScheme.surfaceVariant), // Fondo suave
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            Modifier
-                .align(Alignment.Center)
-                .wrapContentSize()
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            // Imagen institucional arriba
-            Image(
-                painter = painterResource(id = R.drawable.tecsup),
-                contentDescription = "Logo TECSUP",
-                modifier = Modifier
-                    .height(110.dp)
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-                    .shadow(6.dp, RoundedCornerShape(18.dp))
-            )
-            Card(
-                Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Mis Cursos", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(20.dp))
+                Icon(
+                    imageVector = Icons.Default.Login,
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Bienvenido",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Inicia sesión en EventPlanner",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Correo electrónico") },
-                        leadingIcon = { Icon(Icons.Filled.Email, contentDescription = "Email") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Contraseña") },
-                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Contraseña") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
-                    )
-                    Spacer(Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                    AnimatedVisibility(visible = isLoading, enter = fadeIn()) {
-                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                    }
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Correo Electrónico") },
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (authState is Resource.Loading) {
+                    CircularProgressIndicator()
+                } else {
                     Button(
-                        onClick = {
-                            if (email.isBlank() || password.isBlank()) {
-                                Toast.makeText(context, "Complete todos los campos", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            isLoading = true
-                            auth.signInWithEmailAndPassword(email, password)
-                                .addOnCompleteListener { task ->
-                                    isLoading = false
-                                    if (task.isSuccessful) {
-                                        Toast.makeText(context, "Inicio exitoso", Toast.LENGTH_SHORT).show()
-                                        onLoginSuccess()
-                                    } else {
-                                        Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                        },
-                        enabled = !isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(50)
+                        onClick = { viewModel.login(email, password) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (isLoading) "Cargando..." else "Ingresar")
+                        Text("INGRESAR", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
-                    TextButton(
-                        onClick = onNavigateToRegister,
-                        modifier = Modifier.padding(top = 6.dp)
-                    ) {
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(onClick = onNavigateToRegister) {
                         Text("¿No tienes cuenta? Regístrate aquí")
                     }
                 }
